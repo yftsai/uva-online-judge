@@ -1,6 +1,4 @@
-# #geometry
-# The selected formulae are not biased by the selection of a, b, or c.
-# Otherwise, the precision may be affected by their relative values.
+# #geometry #floating_point
 from sys import stdin
 from math import pi, sqrt
 
