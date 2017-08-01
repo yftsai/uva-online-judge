@@ -22,7 +22,7 @@ while True:
                 assignment[team][i] = table + 1
                 seat_capacities[table] -= 1
                 is_valid = is_valid and (seat_capacities[table] >= 0)
-   
+
     print(1 if is_valid else 0)
     if is_valid:
         for a in assignment:

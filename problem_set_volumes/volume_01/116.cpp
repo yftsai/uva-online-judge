@@ -11,7 +11,7 @@ int main()
         for (auto &row: matrix)
             for (auto &v: row)
                 cin >> v;
-        
+
         for (int col = n-2; col>=0; --col)
             for (int row = 0; row<m; ++row) {
                 int &step = steps[row][col];

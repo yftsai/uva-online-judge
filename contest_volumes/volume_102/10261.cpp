@@ -38,7 +38,7 @@ int main()
                     if (right_length <= ferry_length)
                         left_states[i][left_length] = true;
                 }
-            
+
             if (find(left_states[i].begin(), left_states[i].end(), true) == left_states[i].end())
                 total_lengths.pop_back(), left_states.pop_back();
         }
