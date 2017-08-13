@@ -59,7 +59,7 @@ int get_min_cost(graph &min_costs, edges &other_costs)
             graph update_min_costs;
             edges update_other_costs;
             auto is_in_cycle = [&](uint16_t v) { return cycle.find(v) != cycle.end(); };
-            for (const auto dst_e: min_costs)
+            for (const auto &dst_e: min_costs)
                 if (!is_in_cycle(dst_e.first)) {
                     if (is_in_cycle(dst_e.second.first))
                         add_edge(dst_e.first, pair<int, int>(c, dst_e.second.second), update_min_costs, update_other_costs);
