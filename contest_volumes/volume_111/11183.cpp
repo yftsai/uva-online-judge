@@ -5,86 +5,102 @@
 #include <algorithm>
 using namespace std;
 
-const int invalid_cost = numeric_limits<int>::max();
-typedef map<uint16_t, pair<uint16_t, int>> graph;   // edge destination, edge source, cost
-typedef map<uint16_t, map<uint16_t, int>> edges;
+typedef uint16_t node_id;
+node_id invalid_id = numeric_limits<node_id>::max();
 
-void add_edge(int dst, pair<uint16_t, int> src_c, graph &min_costs, edges &other_costs)
+struct connections
 {
-    if (min_costs.find(dst) != min_costs.end() && src_c.second < min_costs[dst].second)
-        swap(min_costs[dst], src_c);
+    map<node_id, int> ins;  // set min_in to invalid after updating ins
+    set<node_id> outs;
+    node_id min_in;
+};
+typedef map<node_id, connections> graph;
 
-    if (dst == 0 || dst == src_c.first)
-        ;
-    else if (min_costs.find(dst) == min_costs.end())
-        min_costs[dst] = src_c;
-    else if (other_costs.find(dst) == other_costs.end()
-        || other_costs[dst].find(src_c.first) == other_costs[dst].end()
-        || src_c.second < other_costs[dst][src_c.first])
-        other_costs[dst][src_c.first] = src_c.second;
+void add_edge(node_id from, node_id to, int cost, graph &costs)
+{
+    if ((to != 0 && to != from)
+        && (costs.find(to) == costs.end()
+            || costs[to].ins.find(from) == costs[to].ins.end()
+            || cost < costs[to].ins[from])) {
+        costs[to].ins[from] = cost;
+        costs[to].min_in = invalid_id;
+        costs[from].outs.insert(to);
+    }
 }
 
-set<uint16_t> get_cycle(const graph &min_costs, uint16_t p, set<uint16_t> &reachable)
+void get_reachable(const graph &costs, node_id n, set<node_id> &reachable)
 {
-    set<uint16_t> cycle;
-    auto get_source = [&](int dst) { return min_costs.find(dst)->second.first; };
-    bool is_reachable = false;
-    for (uint32_t i = 0, q = p; i <= min_costs.size() && !(is_reachable = reachable.find(q) != reachable.end()); i++, q = get_source(q))
-        ;
-    if (is_reachable)
-        for (int q = p; reachable.find(q) == reachable.end(); q = get_source(q))
-            reachable.insert(q);
+    graph::const_iterator it;
+    if (reachable.find(n) != reachable.end() || (it = costs.find(n)) == costs.end())
+        return;
     else {
-        for (int q = get_source(p); p != q; p = get_source(p), q = get_source(get_source(q)))
-            ;
-        for (; cycle.count(p) == 0; p = get_source(p))
-            cycle.insert(p);
+        reachable.insert(n);
+        for (const node_id &out: it->second.outs)
+            get_reachable(costs, out, reachable);
     }
+}
+
+node_id get_min_in(connections &c)
+{
+    typedef pair<node_id, int> in_cost;
+    auto compare_cost = [](const in_cost &ic1, const in_cost &ic2) { return ic1.second < ic2.second; };
+    if (c.min_in == invalid_id)
+        c.min_in = min_element(c.ins.begin(), c.ins.end(), compare_cost)->first;
+    return c.min_in;
+}
+
+set<node_id> get_cycle(graph &costs, set<node_id> &reachable, node_id p)
+{
+    node_id q = p;
+    for (size_t i = 0; i < costs.size() && reachable.count(q) == 0; i++)
+        q = get_min_in(costs[q]);
+    set<node_id> cycle;
+    if (reachable.find(q) != reachable.end())
+        for (q = p; reachable.find(q) == reachable.end(); q = get_min_in(costs[q]))
+            reachable.insert(q);
+    else
+        for (; cycle.find(q) == cycle.end(); q = get_min_in(costs[q]))
+            cycle.insert(q);
     return cycle;
 }
 
-int get_min_cost(graph &min_costs, edges &other_costs)
+int get_min_cost(graph &costs)
 {
+    set<node_id> nodes;
+    auto get_node_id = [](const pair<node_id, connections> &p) { return p.first; };
+    transform(costs.begin(), costs.end(), inserter(nodes, nodes.end()), get_node_id);
+
     int cost = 0;
-    for (set<uint16_t> reachable = {0}; reachable.size() < min_costs.size() + 1; ) {
-        set<uint16_t> cycle;
-        for (auto it = min_costs.begin(); it != min_costs.end() && cycle.size() == 0; it++)
-            cycle = get_cycle(min_costs, it->first, reachable);
-
-        if (cycle.size() > 0) {
-            for (auto v: cycle)
-                cost += min_costs[v].second;
-
-            int c = min_costs.rbegin()->first + 1;
-            graph update_min_costs;
-            edges update_other_costs;
-            auto is_in_cycle = [&](uint16_t v) { return cycle.find(v) != cycle.end(); };
-            for (const auto &dst_e: min_costs)
-                if (!is_in_cycle(dst_e.first)) {
-                    if (is_in_cycle(dst_e.second.first))
-                        add_edge(dst_e.first, pair<int, int>(c, dst_e.second.second), update_min_costs, update_other_costs);
-                    else
-                        add_edge(dst_e.first, dst_e.second, update_min_costs, update_other_costs);
-                }
-            for (const auto &dst_es: other_costs)
-                for (const auto &src_c: dst_es.second)
-                    if (!is_in_cycle(dst_es.first))
-                        if (is_in_cycle(src_c.first))
-                            add_edge(dst_es.first, pair<int, int>(c, src_c.second), update_min_costs, update_other_costs);
-                        else
-                            add_edge(dst_es.first, src_c, update_min_costs, update_other_costs);
-                    else if (!is_in_cycle(src_c.first))
-                        add_edge(c, pair<int, int>(src_c.first, src_c.second - min_costs[dst_es.first].second), update_min_costs, update_other_costs);
-            min_costs.swap(update_min_costs);
-            other_costs.swap(update_other_costs);
-
-            // it's impossible to reach c
-            if (min_costs.find(c) == min_costs.end())
-                return invalid_cost;
+    set<node_id> reachable = {0};
+    while (!nodes.empty()) {
+        set<uint16_t> cycle = get_cycle(costs, reachable, *nodes.begin());
+        if (cycle.size() == 0)
+            nodes.erase(nodes.begin());
+        else {
+            node_id c = costs.rbegin()->first + 1;
+            for (auto v: cycle) {
+                int cost_in_cycle = costs[v].ins[ get_min_in(costs[v]) ];
+                cost += cost_in_cycle;
+                for (auto in_c: costs[v].ins)
+                    if (cycle.count(in_c.first) == 0) {
+                        add_edge(in_c.first, c, in_c.second - cost_in_cycle, costs);
+                        costs[in_c.first].outs.erase(v);
+                    }
+                for (auto out: costs[v].outs)
+                    if (cycle.count(out) == 0) {
+                        add_edge(c, out, costs[out].ins[v], costs);
+                        costs[out].ins.erase(v);
+                        costs[out].min_in = invalid_id;
+                    }
+                costs.erase(costs.find(v));
+                nodes.erase(v);
+            }
+            nodes.insert(c);
         }
     }
-    for (auto &es: min_costs)
-        cost += es.second.second;
+    reachable.erase(reachable.find(0));
+    for (auto &v: reachable)
+        cost += costs[v].ins[ get_min_in(costs[v]) ];
     return cost;
 }
 
@@ -93,18 +109,18 @@ int main()
     int case_count;
     cin >> case_count;
     for (int case_number = 1; case_number <= case_count; case_number++) {
-        uint32_t n, m;
+        uint16_t n, m;
+        graph costs;
         cin >> n >> m;
-        graph min_costs;
-        edges other_costs;
         for (uint16_t i = 0, u, v, w; i < m && cin >> u >> v >> w; i++)
-            add_edge(v, pair<int, int>(u, w), min_costs, other_costs);
+            add_edge(u, v, w, costs);
 
-        int cost = (min_costs.size() + 1 < n) ? invalid_cost : get_min_cost(min_costs, other_costs);
-        if (cost == invalid_cost)
+        set<node_id> reachable;
+        get_reachable(costs, 0, reachable);
+        if (reachable.size() < n)
             cout << "Case #" << case_number << ": Possums!" << endl;
         else
-            cout << "Case #" << case_number << ": " << cost << endl;
+            cout << "Case #" << case_number << ": " << get_min_cost(costs) << endl;
     }
 
     return 0;
