@@ -51,8 +51,9 @@ node_id get_min_in(connections &c)
 
 set<node_id> get_cycle(graph &costs, set<node_id> &reachable, node_id p)
 {
+    size_t remained_count = costs.size() - reachable.size();
     node_id q = p;
-    for (size_t i = 0; i < costs.size() && reachable.count(q) == 0; i++)
+    for (size_t i = 0; i < remained_count && reachable.find(q) == reachable.end(); i++)
         q = get_min_in(costs[q]);
     set<node_id> cycle;
     if (reachable.find(q) != reachable.end())
@@ -82,12 +83,12 @@ int get_min_cost(graph &costs)
                 int cost_in_cycle = costs[v].ins[ get_min_in(costs[v]) ];
                 cost += cost_in_cycle;
                 for (auto in_c: costs[v].ins)
-                    if (cycle.count(in_c.first) == 0) {
+                    if (cycle.find(in_c.first) == cycle.end()) {
                         add_edge(in_c.first, c, in_c.second - cost_in_cycle, costs);
                         costs[in_c.first].outs.erase(v);
                     }
                 for (auto out: costs[v].outs)
-                    if (cycle.count(out) == 0) {
+                    if (cycle.find(out) == cycle.end()) {
                         add_edge(c, out, costs[out].ins[v], costs);
                         costs[out].ins.erase(v);
                         costs[out].min_in = invalid_id;

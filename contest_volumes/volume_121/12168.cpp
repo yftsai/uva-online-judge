@@ -1,38 +1,35 @@
 #include <iostream>
-#include <map>
 #include <set>
 #include <vector>
 #include <queue>
+#include <limits>
 using namespace std;
 
-struct node
+bool augment(vector<set<uint16_t>> &nodes)
 {
-    set<node*> outs;
-};
+    const uint16_t source(nodes.size() - 1), sink(nodes.size() - 2);
+    const uint16_t unknown = numeric_limits<uint16_t>::max();
+    queue<uint16_t> q;
+    vector<uint16_t> ins(nodes.size(), unknown);
 
-bool augment(node *src, node *sink)
-{
-    queue<node*> q;
-    map<node*, node*> ins;
-
-    q.push(src);
-    ins[src] = nullptr;
-    while (!q.empty() && ins.find(sink) == ins.end()) {
-        node *n = q.front();
+    q.push(source);
+    ins[source] = source;
+    while (!q.empty() && ins[sink] == unknown) {
+        uint16_t n = q.front();
         q.pop();
-        for (node *m: n->outs)
-            if (ins.find(m) == ins.end()) {
+        for (uint16_t m: nodes[n])
+            if (ins[m] == unknown) {
                 ins[m] = n;
                 q.push(m);
             }
     }
 
-    if (ins.find(sink) == ins.end())
+    if (ins[sink] == unknown)
         return false;
     else {
-        for (node *p = sink; p != src; p = ins[p]) {
-            p->outs.insert(ins[p]);
-            ins[p]->outs.erase(p);
+        for (uint16_t p = sink; p != source; p = ins[p]) {
+            nodes[p].insert(ins[p]);
+            nodes[ins[p]].erase(p);
         }
         return true;
     }
@@ -40,11 +37,12 @@ bool augment(node *src, node *sink)
 
 int main()
 {
-    int case_count, c, d, v;
+    int case_count;
+    uint16_t c, d, v;
     for (cin >> case_count; case_count > 0 && cin >> c >> d >> v; case_count--) {
-        vector<set<int>> pet_voters(c + d);
+        vector<set<uint16_t>> pet_voters(c + d);
         vector<bool> is_cat_lover(v);
-        for (int i = 0; i < v; i++) {
+        for (uint16_t i = 0; i < v; i++) {
             char stay_p, leave_p;
             int stay_no, leave_no;
             cin >> stay_p >> stay_no >> leave_p >> leave_no;
@@ -60,24 +58,24 @@ int main()
             }
         }
 
-        vector<node> nodes(v + 2);
-        node &source = nodes[v], &sink = nodes[v+1];
-        for (int i = 0; i < v; i++)
+        vector<set<uint16_t>> nodes(v + 2);
+        const uint16_t source(nodes.size() - 1), sink(nodes.size() - 2);
+        for (uint16_t i = 0; i < v; i++)
             if (is_cat_lover[i])
-                source.outs.insert(&nodes[i]);
+                nodes[source].insert(i);
             else
-                nodes[i].outs.insert(&sink);
+                nodes[i].insert(sink);
         for (auto &voters: pet_voters)
             for (auto i: voters)
                 if (is_cat_lover[i])
                     for (auto j: voters)
                         if (!is_cat_lover[j])
-                            nodes[i].outs.insert(&nodes[j]);
+                            nodes[i].insert(j);
 
-        while (augment(&source, &sink))
+        while (augment(nodes))
             ;
 
-        cout << (v - sink.outs.size()) << endl;
+        cout << (v - nodes[sink].size()) << endl;
     }
 
     return 0;
