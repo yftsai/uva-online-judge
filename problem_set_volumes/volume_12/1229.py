@@ -19,12 +19,11 @@ while True:
     removable_words = [w for w in d.keys() if in_degrees.get(w, 0) == 0]
     while removable_words:
         word = removable_words.pop()
-        if word in d:
-            for w in d[word]:
-                in_degrees[w] -= 1
-                if in_degrees[w] == 0:
-                    removable_words.append(w)
-            del d[word]
+        for w in d[word]:
+            in_degrees[w] -= 1
+            if in_degrees[w] == 0:
+                removable_words.append(w)
+        del d[word]
 
     print(len(d))
     print(" ".join(sorted(d.keys())))
