@@ -3,12 +3,11 @@
 
 # "count" recursively generates numbers from the most significant digits, and
 # returns the count of numbers with the specified patten.
-# The number under generation is described by some prefix followed by a
+# The partially generated number is described as some prefix followed by a
 # sequence. Only the sequence possible to be extended to the pattern is
-# preserved. The prefix are digits safe to be ignored, but whether it is empty
-# determines whether leading zeros are allowed in the sequence under generation.
-# Since the prefix is not explicitly preserved, the value limitation bounds the
-# maximum after it.
+# preserved. The prefix are safe to ignore in matching, but whether it is empty
+# determines whether leading zeros are allowed in the sequence. Since the prefix
+# is not explicitly preserved, the limitation bounds the maximum after it.
 def count(counts, limit, pattern, is_empty_prefix = True, sequence = ""):
     if len(pattern) > len(limit) or (len(pattern) == len(limit) and pattern > limit):
         return 0
