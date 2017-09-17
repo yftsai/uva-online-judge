@@ -1,5 +1,5 @@
 // #dynamic_programming
-// This approach was proposed on the forum, and run in O(n^2 lg n) better than the naive O(n^3).
+// This approach was proposed on the forum, and run in O(n^2) better than the naive O(n^3).
 #include <iostream>
 #include <cmath>
 using namespace std;
