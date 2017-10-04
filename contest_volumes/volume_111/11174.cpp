@@ -1,8 +1,8 @@
 // #arithmetic #modulo
-// The main challenge is calculating (a/b) % p, but a is represented by c = a % p.
-// Given b is relatively prime to p and trivially b * (1/b) % p == 1, there is
-// only one q with (0, p) such that (b * q) % p == 1. Hence, it is safe to replace
-// dividing by b with multiplying by q.
+// The main challenge is obtaining (a/b) % p from a' = a % p, b, and p.
+// Given b is relatively prime to p, there is exactly one q within (0, p) such that
+// (b * q) % p == 1. Similarly, r = (a' * q) % p is the only value within [0, p)
+// such that (r * b) % p == a % p. Hence, it is equivalent to compute (a' * q) % p.
 #include <iostream>
 #include <vector>
 using namespace std;
