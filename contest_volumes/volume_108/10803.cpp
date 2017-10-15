@@ -8,8 +8,8 @@ using namespace std;
 int main()
 {
     constexpr double unreachable = numeric_limits<double>::max() / 4;
-    cout << std::fixed << std::setprecision(4);
-    
+    cout << fixed << setprecision(4);
+
     int case_count, n;
     cin >> case_count;
     for (int case_number = 1; case_number <= case_count; case_number++) {
