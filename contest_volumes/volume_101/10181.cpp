@@ -70,8 +70,8 @@ bool search(string &frame, int s, string &path)
 
 int main()
 {
-	int n;
-	for (cin >> n; n>0; n--){
+    int n;
+    for (cin >> n; n>0; n--) {
         string frame(16, ' ');
         int s = 0;
         for (int i=0, j; i<16 && cin >> j; ++i)
@@ -84,7 +84,7 @@ int main()
         if (is_solvable(frame, s) && search(frame, s, path))
             cout << path << endl;
         else
-			cout << "This puzzle is not solvable." << endl;
-	}
-	return 0;
+            cout << "This puzzle is not solvable." << endl;
+    }
+    return 0;
 }
