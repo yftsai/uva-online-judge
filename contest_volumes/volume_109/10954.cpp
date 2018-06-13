@@ -1,25 +1,25 @@
 // #huffman_coding
 #include <iostream>
-#include <vector>
-#include <queue>
-#include <functional>
+#include <algorithm>
 using namespace std;
 
 int main()
 {
-    priority_queue<uint32_t, std::vector<uint32_t>, greater<int>> q;
-    for (int n; cin >> n && n != 0; q.pop()) {
-        for (uint32_t m; n > 0 && cin >> m; n--)
-            q.push(m);
+    int numbers[5000];
+    for (int n; cin >> n && n != 0; ) {
+        for (int i = 0; i < n; i++)
+            cin >> numbers[i];
 
-        uint32_t cost = 0;
-        while (q.size() > 1) {
-            uint32_t a = q.top();
-            q.pop();
-            uint32_t b = q.top();
-            q.pop();
-            cost += a + b;
-            q.push(a + b);
+        int *qbegin = numbers, *qend = numbers + n;
+        sort(qbegin, qend);
+        int *rbegin = numbers, *rend = numbers;     // queue r is initially empty
+
+        int cost = 0;
+        for (int i = 1; i < n; i++) {
+            // C++11 sequenced-before rule is required
+            *rend = (rbegin == rend || (qbegin != qend && *qbegin < *rbegin)) ? *(qbegin++) : *(rbegin++);
+            *rend += (rbegin == rend || (qbegin != qend && *qbegin < *rbegin)) ? *(qbegin++) : *(rbegin++);
+            cost += *(rend++);
         }
         cout << cost << endl;
     }
