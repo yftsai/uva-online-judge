@@ -53,7 +53,7 @@ while True:
         else:
             polygon = polygon[::-1]
             area = (0, -a)
-            
+
         while radius[1] - radius[0] > 0.0002:
             # interpolation to shrink the range of raiduses within 1
             int_r = radius[0] + (radius[1] - radius[0]) * ((r - area[0]) / (area[1] - area[0])) **0.5

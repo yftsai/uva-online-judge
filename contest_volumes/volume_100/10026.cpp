@@ -12,7 +12,7 @@ int main()
     auto cmp = [](const job &t, const job &s) {
         return get<2>(s) * get<1>(t) < get<2>(t) * get<1>(s);
     };
-    
+
     int case_count, job_count;
     job jobs[1000];
     for (cin >> case_count; case_count > 0; case_count--){

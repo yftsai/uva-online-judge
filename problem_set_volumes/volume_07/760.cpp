@@ -25,7 +25,7 @@ int main()
             for (uint16_t i = 0; i < s.size(); i++)
                 if (find(lengths[i], lengths[i] + t.size(), max_length) != lengths[i] + t.size())
                     lcs_set.insert(s.substr(i, max_length));
-   
+
         if (!is_first)
             cout << endl;
         if (max_length == 0)
