@@ -3,7 +3,7 @@
 #include <vector>
 using namespace std;
 
-// Goldbach's conjecture: Every even integer greater than 2 can be expressed as the sum of two primes. 
+// Goldbach's conjecture: Every even integer greater than 2 can be expressed as the sum of two primes.
 
 bool is_prime(const vector<int> &prime, int n)
 {
@@ -35,6 +35,6 @@ int main()
             cout << " " << p << " " << (i-p) << endl;
         }
     }
-    
+
     return 0;
 }
