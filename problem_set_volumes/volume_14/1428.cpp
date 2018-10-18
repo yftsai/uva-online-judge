@@ -1,7 +1,7 @@
 // #dynamic_programming
-// There are other solutions using a binary indexed tree Since the range of
-// ranks is larger than the range of player count, it may not be better. It is
-// also possible to pass with an unrolled linked list.
+// There is another solution based on a binary indexed tree. Since the range of
+// ranks is larger than the range of player count, the performance may not be
+// better. It is also possible to pass with an unrolled linked list.
 #include <iostream>
 #include <algorithm>
 #include <vector>
@@ -67,7 +67,6 @@ int main()
             cin >> rank;
 
         unique_ranks.assign(ranks.begin(), ranks.end());
-        unique_ranks.resize(unique(unique_ranks.begin(), unique_ranks.end()) - unique_ranks.begin());
         sort(unique_ranks.begin(), unique_ranks.end());
 
         const uint32_t *q = unique_ranks.data();
