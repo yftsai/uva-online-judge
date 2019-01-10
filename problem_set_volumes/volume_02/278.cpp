@@ -1,4 +1,4 @@
-// #nqueen
+// #n_queen
 #include <iostream>
 #include <cstdlib>
 #include <algorithm>
@@ -14,32 +14,34 @@ int get_max_knights(int m, int n)
     return (m * n + 1) / 2;
 }
 
-int get_max_queens(int m, int n, int cols[10], int index = 0)
-{
-    int count = 0;
-    if (index == m) {
-        for (int i = 0; i < m; ++i)
-            if (cols[i] < n)
-                count++;
-    }
-    else {
-        for (cols[index] = 0; cols[index] <= n; ++cols[index]) {
-            bool is_valid = true;
-            for (int i = 0; i < index && is_valid; i++)
-                is_valid = (cols[i] == n) || ((cols[i] != cols[index]) && (abs(cols[i] - cols[index]) != (index - i)));
-            if (is_valid)
-                count = max(count, get_max_queens(m, n, cols, index + 1));
-        }
-    }
-
-    return count;
-}
-
 int get_max_queens(int m, int n)
 {
-    int cols[10];
-    fill(cols, cols + m, n);
-    return get_max_queens(m, n, cols, 0);
+    if (m > n)
+        swap(m, n);
+
+    for (int queen_count = m; queen_count > 0; --queen_count) {
+        bool is_selected[n];
+        fill(is_selected, is_selected + n - queen_count, false);
+        fill(is_selected + n - queen_count, is_selected + n, true);
+        do {
+            int cols[m];
+            for (int i = 0, j = 0; i < n; ++i)
+                if (is_selected[i])
+                    cols[j++] = i;
+            fill(cols + queen_count, cols + m, n);
+
+            do {
+                bool is_valid = true;
+                for (int i = 1; i < m && is_valid; ++i)
+                    for (int j = 0; j < i && cols[i] < n && is_valid; ++j)
+                        is_valid = (cols[j] == n || abs(cols[i] - cols[j]) != (i - j));
+                if (is_valid)
+                    return queen_count;
+            } while (next_permutation(cols, cols + m));
+        } while (next_permutation(is_selected, is_selected + n));
+    }
+
+    return 0;
 }
 
 int get_max_kings(int m, int n)
