@@ -6,12 +6,12 @@
 using namespace std;
 
 void augment(const vector<vector<uint16_t>> &graph,
-             const vector<uint16_t> &path,
+             const vector<uint16_t> &rpath,
              vector<uint16_t> &matches)
 {
-    for (uint16_t i = 0; i < path.size(); i += 2) {
-        matches[ path[i] ] = path[i + 1];
-        matches[ path[i + 1] ] = path[i];
+    for (uint16_t i = 0; i < rpath.size(); i += 2) {
+        matches[ rpath[i] ] = rpath[i + 1];
+        matches[ rpath[i + 1] ] = rpath[i];
     }
 }
 
@@ -21,7 +21,6 @@ void find_augment_path(const vector<vector<uint16_t>> &graph,
                        vector<uint16_t> &rpath)
 {
     const uint16_t node_count = graph.size(), invalid_node = graph.size();
-    assert(matches[start] == matches.size());
     vector<uint16_t> parents(graph.size(), invalid_node);
     queue<uint16_t> q;
     rpath.resize(0);
@@ -54,17 +53,12 @@ void find_augment_path(const vector<vector<uint16_t>> &graph,
     }
     else {
         vector<bool> blossom(node_count, false);
-        for (uint16_t n = end; n != start; n = parents[ matches[n] ]) {
-            blossom[n] = true;
-            blossom[ matches[n] ] = true;
-        }
+        for (uint16_t n = end; n != start; n = parents[ matches[n] ])
+            blossom[n] = blossom[ matches[n] ] = true;
         uint16_t lca = invalid_node;
         for (uint16_t n = parents[end]; n != start && lca == invalid_node; n = parents[ matches[n] ]) {
-            if (blossom[n])
-                lca = n;
-            else
-                blossom[n] = true;
-            blossom[ matches[n] ] = true;
+            lca = blossom[n] ? n : lca;
+            blossom[n] = blossom[ matches[n] ] = true;
         }
         lca = (lca == invalid_node) ? start : lca;
         for (uint16_t m = parents[end], n = end; n != lca; n = parents[ matches[n] ]) {
@@ -97,21 +91,16 @@ void find_augment_path(const vector<vector<uint16_t>> &graph,
             if (rp[i] != lca)
                 rpath.push_back(rp[i]);
             else {
-                assert(i > 0 && rp[i - 1] != lca);
                 uint16_t n = rp[i - 1];
                 auto it = find_if(graph[n].begin(), graph[n].end(), [&](uint16_t m) { return blossom[m]; });
                 if (it != graph[n].end())
                     for (n = *it; n != lca; n = parents[ matches[n] ]) {
-                        assert(matches[n] != invalid_node);
-                        assert(parents[ matches[n] ] != invalid_node);
                         rpath.push_back(n);
                         rpath.push_back(matches[n]);
                     }
                 rpath.push_back(lca);
             }
         }
-
-        assert(rpath.size() % 2 == 0);
     }
 }
 
@@ -126,7 +115,7 @@ int main()
 {
     vector<edge> edges;
     vector<int> icpcs;
-    vector<uint16_t> matches, path;
+    vector<uint16_t> matches, rpath;
 
     uint32_t case_count;
     cin >> case_count;
@@ -156,9 +145,9 @@ int main()
             uint16_t m;
             for (m = 0; m < node_count; ++m)
                 if (matches[m] == invalid_node) {
-                    find_augment_path(graph, matches, m, path);
-                    if (path.size() > 0)
-                        augment(graph, path, matches);
+                    find_augment_path(graph, matches, m, rpath);
+                    if (rpath.size() > 0)
+                        augment(graph, rpath, matches);
                     else
                         break;
                 }
