@@ -3,7 +3,6 @@
 #include <cstring>
 using namespace std;
 
-
 int main()
 {
     int sums[26][26];
