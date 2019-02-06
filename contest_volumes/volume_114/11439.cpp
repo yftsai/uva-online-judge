@@ -20,74 +20,64 @@ void find_augment_path(const vector<vector<uint16_t>> &graph,
                        uint16_t start,
                        vector<uint16_t> &rpath)
 {
+    rpath.clear();
     const uint16_t node_count = graph.size(), invalid_node = graph.size();
     vector<uint16_t> parents(graph.size(), invalid_node);
-    queue<uint16_t> q;
-    rpath.resize(0);
 
     uint16_t end = invalid_node;
-    for (q.push(start); q.size() > 0 && end == invalid_node; ) {
-        const uint16_t m = q.front();
-        q.pop();
+    for (vector<pair<uint16_t, uint16_t>> stack(1, pair<uint16_t, uint16_t>(start, 0)); stack.size() > 0 && end == invalid_node; ){
+        const uint16_t m = stack.back().first;
+        uint16_t i = stack.back().second;
+        const auto &edges = graph[m];
 
-        for (const uint16_t n: graph[m])
-            if (matches[n] == invalid_node || parents[ matches[n] ] != invalid_node) {
-                parents[end = n] = m;
+        auto is_end = [&](uint16_t n) { return matches[n] == invalid_node || parents[ matches[n] ] != invalid_node; };
+        auto is_next = [&](uint16_t n) { return parents[n] == invalid_node; };
+        for (; i < edges.size(); ++i)
+            if (is_end(edges[i]) || is_next(edges[i]))
                 break;
-            }
-            else if (parents[n] == invalid_node) {
-                parents[n] = m;
-                q.push(matches[n]);
-            }
+
+        const uint16_t n = (i < edges.size()) ? edges[i] : invalid_node;
+        if (i >= edges.size())
+            stack.pop_back();
+        else if (is_end(n))
+            parents[ end = n ] = m;
+        else {
+            parents[n] = m;
+            stack.back().second = i + 1u;
+            stack.push_back(pair<uint16_t, uint16_t>(matches[n], 0));
+        }
     }
 
     if (end == invalid_node)
         ;
     else if (end != start && matches[end] == invalid_node) {
-        for (int p; parents[end] != start; end = matches[p]) {
-            rpath.push_back(end);
-            rpath.push_back(p = parents[end]);
+        for (rpath.assign(1, end); parents[rpath.back()] != start; ) {
+            rpath.push_back(parents[rpath.back()]);
+            rpath.push_back(matches[rpath.back()]);
         }
-        rpath.push_back(end);
         rpath.push_back(start);
     }
     else {
+        uint16_t lca = end;
         vector<bool> blossom(node_count, false);
-        for (uint16_t n = end; n != start; n = parents[ matches[n] ])
-            blossom[n] = blossom[ matches[n] ] = true;
-        uint16_t lca = invalid_node;
-        for (uint16_t n = parents[end]; n != start && lca == invalid_node; n = parents[ matches[n] ]) {
-            lca = blossom[n] ? n : lca;
-            blossom[n] = blossom[ matches[n] ] = true;
+        for (uint16_t n = end, m; parents[n] != lca; n = matches[m]) {
+            m = parents[n];
+            parents[m] = n;
+            blossom[m] = blossom[ matches[m] ] = true;
         }
-        lca = (lca == invalid_node) ? start : lca;
-        for (uint16_t m = parents[end], n = end; n != lca; n = parents[ matches[n] ]) {
-            parents[n] = m;
-            m = matches[n];
-        }
-        for (uint16_t m = end, n = parents[end]; n != lca; n = parents[ matches[n] ]) {
-            parents[n] = m;
-            m = matches[n];
-        }
-        for (uint16_t n = lca; n != start; n = parents[ matches[n] ])
-            blossom[n] = blossom[ matches[n] ] = false;
 
         vector<vector<uint16_t>> g(graph.size());
-        for (uint16_t i = 0; i < node_count; ++i) {
-            uint16_t gi = blossom[i] ? lca : i;
-            auto &es = g[gi];
-            for (uint16_t j: graph[i]) {
-                uint16_t gj = blossom[j] ? lca : j;
-                if (gi != gj)
-                    es.push_back(gj);
-            }
-            sort(es.begin(), es.end());
-            es.erase(unique(es.begin(), es.end()), es.end());
+        auto map = [&blossom, lca](uint16_t n) { return blossom[n] ? lca : n; };
+        for (uint16_t n = 0; n < node_count; ++n) {
+            auto &edges = g[map(n)];
+            for (uint16_t m: graph[n])
+                if (map(n) != map(m))
+                    edges.push_back(map(m));
         }
 
         vector<uint16_t> rp;
         find_augment_path(g, matches, start, rp);
-        for (uint16_t i = 0; i < rp.size(); ++i) {
+        for (uint16_t i = 0; i < rp.size(); ++i)
             if (rp[i] != lca)
                 rpath.push_back(rp[i]);
             else {
@@ -100,7 +90,6 @@ void find_augment_path(const vector<vector<uint16_t>> &graph,
                     }
                 rpath.push_back(lca);
             }
-        }
     }
 }
 
@@ -115,7 +104,7 @@ int main()
 {
     vector<edge> edges;
     vector<int> icpcs;
-    vector<uint16_t> matches, rpath;
+    vector<uint16_t> partial_matches, matches, rpath;
 
     uint32_t case_count;
     cin >> case_count;
@@ -133,7 +122,7 @@ int main()
         const uint16_t invalid_node = node_count;
         auto edges_begin = edges.begin();
         size_t icpcs_begin = 0, icpcs_end = icpcs.size();
-        matches.assign(node_count, invalid_node);
+        partial_matches.assign(node_count, invalid_node);
         while (icpcs_begin + 1u < icpcs_end) {
             size_t icpcs_mid = (icpcs_begin + icpcs_end) / 2u;
             vector<vector<uint16_t>> graph(node_count);
@@ -143,6 +132,7 @@ int main()
                     graph[it->j].push_back(it->i);
                 }
             uint16_t m;
+            matches = partial_matches;
             for (m = 0; m < node_count; ++m)
                 if (matches[m] == invalid_node) {
                     find_augment_path(graph, matches, m, rpath);
@@ -155,10 +145,11 @@ int main()
             if (m == node_count) {
                 icpcs_begin = icpcs_mid;
                 edges_begin = lower_bound(edges_begin, edges.end(), edge { 0, 0, icpcs[icpcs_mid] });
-                matches.assign(node_count, invalid_node);
             }
-            else
+            else {
                 icpcs_end = icpcs_mid;
+                partial_matches.swap(matches);
+            }
         }
         cout << "Case " << case_number << ": " << icpcs[icpcs_begin] << endl;
     }
