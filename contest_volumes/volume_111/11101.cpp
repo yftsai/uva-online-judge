@@ -1,4 +1,4 @@
-// #breadth-first_search
+// #breadth_first_search
 #include <iostream>
 #include <algorithm>
 #include <functional>
