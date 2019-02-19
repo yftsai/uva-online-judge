@@ -1,5 +1,5 @@
 // #permutation
-// A tree-based implementation is not required to solved this problem.
+// A tree-based implementation is not required to solve this problem.
 #include <iostream>
 using namespace std;
 
