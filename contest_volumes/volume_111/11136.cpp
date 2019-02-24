@@ -1,30 +1,36 @@
 #include <iostream>
-#include <vector>
-#include <algorithm>
+#include <set>
 using namespace std;
 
 int main()
 {
-    unsigned int n, k, b;
+    multiset<uint32_t> small_bills, large_bills;
     
-    while ((cin >> n) && (n>0)){
-        vector<unsigned int> bill;
-        unsigned long amount = 0;
-        for (unsigned int i=0; i<n; i++){
+    for (uint16_t n; cin >> n && n > 0; small_bills.clear(), large_bills.clear()){
+        uint64_t amount = 0;
+        for (; n > 0; --n) {
+            uint32_t k;
             cin >> k;
-            for (unsigned int j=0; j<k; j++){
-                cin >> b;
-                bill.push_back(b);
+            for (uint32_t j = 0, b; j < k && cin >> b; ++j) {
+                if (small_bills.size() < n || b < *(--small_bills.end()))
+                    small_bills.insert(b);
+                else
+                    large_bills.insert(b);
+                if (small_bills.size() > n) {
+                    large_bills.insert(large_bills.begin(), *(--small_bills.end()));
+                    small_bills.erase(--small_bills.end());
+                }
+                if (large_bills.size() > n)
+                    large_bills.erase(large_bills.begin());
             }
-            sort(bill.begin(), bill.end());
-            if (bill.size()>2*n)
-               bill.erase(bill.begin()+n, bill.end()-n);
-            amount += *(--bill.end()) - *bill.begin();
-            bill.erase(bill.begin());
-            bill.erase(--bill.end());
+
+            auto &bills = (large_bills.size() > 0) ? large_bills : small_bills;
+            amount += *(--bills.end()) - *small_bills.begin();
+            bills.erase(--bills.end());
+            small_bills.erase(small_bills.begin());
         }
         cout << amount << endl;
     }
-   
+
     return 0;
 }
