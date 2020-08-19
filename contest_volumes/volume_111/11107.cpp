@@ -1,114 +1,131 @@
+// #suffix_array
 #include <iostream>
 #include <string>
-#include <memory>
-#include <map>
-#include <set>
 #include <vector>
 #include <algorithm>
 using namespace std;
 
-class suffix
+struct substring
 {
-    private:
-        const char *str;
-        size_t pos;
-    public:
-        suffix(const char *s = nullptr, size_t p = 0);
-        char operator[](size_t p) const;
-        const char *term() const;
+    uint16_t seq_idx, pos;
+    bool operator<(const substring &) const { return false; }
 };
 
-suffix::suffix(const char *s, size_t p):
-    str(s), pos(p)
+void unflatten(
+    const uint16_t n,
+    const vector<pair<uint16_t, substring>> &ranked_strs,
+    vector<bool> &is_substring,
+    vector<vector<substring>> &substrs,
+    vector<vector<uint32_t>> *ranks = nullptr)
 {
-}
+    const uint16_t min_size = n / 2 + 1;
 
-char suffix::operator[](size_t p) const
-{
-    return str[pos+p];
-}
-        
-const char *suffix::term() const
-{
-    return str;
-}
-
-void longest_common_string(
-    suffix *src, size_t len, suffix *tmp,
-    string prefix,
-    size_t mincount, set<string> &lcs)
-{
-    set<const char *> term;
-    for (size_t i=0; i<len; i++)
-        term.insert(src[i].term());
-    if (term.size()<mincount)
-        return;
-
-    size_t depth = prefix.length();
-    set<char> bucket;
-    map<char, size_t> count, index;
-    for (size_t i=0; i<len; i++) {
-        char c = src[i][depth];
-        bucket.insert(c);
-        if (count.find(c)==count.end())
-            count.insert(pair<char, size_t>(c, 1));
-        else
-            count.find(c)->second++;
-    }
-
-    size_t cnt = 0;
-    for (char c: bucket) {
-        index.insert(pair<char, size_t>(c, cnt));
-        cnt += count.find(c)->second;
-    }
-
-    for (size_t i=0; i<len; i++) {
-        char c = src[i][depth];
-        size_t &j = index.find(c)->second;
-        tmp[j] = src[i];
-        j++;
-    }
-
-    for (char c: bucket)
-        if (c!='\0') {
-            size_t j = index.find(c)->second; 
-            size_t k = count.find(c)->second;
-            longest_common_string(tmp + j - k, k, src + j - k, prefix+c, mincount, lcs);
+    for (auto bit = ranked_strs.begin(), eit = ranked_strs.begin(); bit != ranked_strs.end(); bit = eit) {
+        is_substring.assign(n, false);
+        uint16_t count = 0;
+        for (eit = bit; eit != ranked_strs.end() && eit->first == bit->first; ++eit)
+            if (!is_substring[eit->second.seq_idx]) {
+                is_substring[eit->second.seq_idx] = true;
+                ++count;
+            }
+        if (count >= min_size) {
+            substrs.emplace_back();
+            for (auto it = bit; it != eit; ++it) {
+                substrs.back().push_back(it->second);
+                if (ranks != nullptr) {
+                    (*ranks)[it->second.seq_idx][it->second.pos] = substrs.size();
+                }
+            }
         }
-
-    if (lcs.size()==0 || lcs.begin()->length() < prefix.length()) {
-        lcs.clear();
-        lcs.insert(prefix);
     }
-    else if (lcs.begin()->length()==prefix.length())
-        lcs.insert(prefix);
 }
 
 int main()
 {
-    bool is_first = true;
-    
-    for (int n; (cin >> n) && n!=0; is_first = false) {
-        vector<string> str;
-        vector<suffix> suf, tmp;
-        str.resize(n);
-        for (int i=0; i<n; i++) {
-            cin >> str[i];
-            for (size_t j=0; j<str[i].length(); j++)
-                suf.push_back(suffix(str[i].c_str(), j));
-        }
-        tmp.resize(suf.size());
+    vector<string> sequences(100);
+    vector<vector<vector<uint32_t>>> ranks;                 // ranks[e][i][pos] of prefixes of length 2^e
+    vector<pair<uint16_t, substring>> ranked_strs;
+    vector<vector<substring>> substrs, extended_substrs;
+    vector<bool> is_substring;
+    const uint32_t NO_RANK = 0;
 
-        set<string> lcs;
-        longest_common_string(&suf[0], suf.size(), &tmp[0], "", str.size()/2+1, lcs);
+    bool is_first = true;
+    for (uint16_t n; (cin >> n) && n != 0; is_first = false) {
+        sequences.resize(n);
+        for (string &s: sequences)
+            cin >> s;
+
+        // rank the substrings of length 1
+        ranks.resize(1);
+        ranks.back().resize(n);
+        ranked_strs.clear();
+        for (uint16_t i = 0; i < n; ++i) {
+            ranks[0][i].assign(sequences[i].size(), NO_RANK);
+            for (uint16_t pos = 0; pos < sequences[i].size(); ++pos)
+                ranked_strs.emplace_back(sequences[i][pos], substring{i, pos});
+        }
+
+        substrs.clear();
+        sort(ranked_strs.begin(), ranked_strs.end());
+        unflatten(n, ranked_strs, is_substring, substrs, &ranks.back());
+
+        // double prefixes
+        uint16_t length_exponent = 0;
+        for (; ; ++length_exponent) {
+            const uint16_t length = (1 << length_exponent);
+            ranks.emplace_back();
+            ranks.back().resize(n);
+            for (uint16_t i = 0; i < n; ++i)
+                if (sequences[i].size() >= length * 2)
+                    ranks.back()[i].assign(sequences[i].size() - length * 2 + 1, NO_RANK);
+
+            extended_substrs.clear();
+            for (const auto &positions: substrs) {
+                ranked_strs.clear();
+                for (const auto &p: positions)
+                    if (p.pos + length * 2u <= sequences[p.seq_idx].size() &&
+                        ranks[length_exponent][p.seq_idx][p.pos + length] != NO_RANK)
+                        ranked_strs.emplace_back(ranks[length_exponent][p.seq_idx][p.pos + length], p);
+
+                sort(ranked_strs.begin(), ranked_strs.end());
+                unflatten(n, ranked_strs, is_substring, extended_substrs, &ranks.back());
+            }
+
+            if (extended_substrs.size() > 0)
+                substrs.swap(extended_substrs);
+            else
+                break;
+        }
+
+        // concatenate the longest common substrings
+        uint16_t length = (substrs.size() == 0) ? 0 : (1 << length_exponent);
+        for (uint16_t len = length / 2, e = length_exponent - 1; len > 0; len /= 2, --e) {
+            extended_substrs.clear();
+            for (const auto &positions: substrs) {
+                ranked_strs.clear();
+                for (const auto &p: positions)
+                    if (uint16_t(p.pos + length + len) <= sequences[p.seq_idx].size() &&
+                        ranks[e][p.seq_idx][p.pos + length] != NO_RANK)
+                        ranked_strs.emplace_back(ranks[e][p.seq_idx][p.pos + length], p);
+
+                sort(ranked_strs.begin(), ranked_strs.end());
+                unflatten(n, ranked_strs, is_substring, extended_substrs);
+            }
+
+            if (extended_substrs.size() > 0) {
+                substrs.swap(extended_substrs);
+                length += len;
+            }
+        }
 
         if (!is_first)
             cout << endl;
-        if (lcs.size()==0 || lcs.begin()->length()==0)
+        if (length == 0)
             cout << "?" << endl;
         else
-            for (const auto &s : lcs)
-                cout << s << endl;
+            for (const auto &s: substrs)
+                cout << sequences[s.front().seq_idx].substr(s.front().pos, length) << endl;
     }
+
     return 0;
 }
