@@ -20,7 +20,6 @@ struct record
         time(t), is_exit(is_exit), location(loc)
     {}
 
-
     bool operator<(const record &r) const
     {
         return time < r.time;
