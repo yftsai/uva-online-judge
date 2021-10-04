@@ -1,28 +1,27 @@
 // #trivial
 #include <iostream>
-#include <unordered_map>
+#include <unordered_set>
 using namespace std;
 
 int main()
 {
     uint16_t t, n, m;
-    unordered_map<int32_t, uint16_t> counts(20011);
-    for (cin >> t; t > 0 && cin >> n >> m; t--) {
-        int number;
-        counts.clear();
-        for (uint16_t i = 0; i < n && cin >> number; i++)
-            counts.emplace(number, 0).first->second++;
+    unordered_multiset<int32_t> elements;
+    for (cin >> t; t > 0 && cin >> n >> m; t--, elements.clear()) {
+        int32_t element;
+        for (uint16_t i = 0; i < n && cin >> element; i++)
+            elements.insert(element);
 
-        uint16_t remove_count = n;
-        for (uint16_t i = 0; i < m && cin >> number; i++) {
-            auto it = counts.find(number);
-            if (it == counts.end() || it->second == 0)
+        uint16_t remove_count = 0;
+        for (uint16_t i = 0; i < m && cin >> element; i++) {
+            auto it = elements.find(element);
+            if (it == elements.end())
                 remove_count++;
             else
-                it->second--, remove_count--;
+                elements.erase(it);
         }
 
-        cout << remove_count << endl;
+        cout << elements.size() + remove_count << endl;
     }
 
     return 0;
